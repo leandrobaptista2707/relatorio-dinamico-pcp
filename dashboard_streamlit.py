@@ -43,7 +43,8 @@ df_temp = df[df["DATA ENTREGA PRIMEIRA VALIDACAO"].between(pd.to_datetime(data_i
 col4, col5, col6 = st.columns(3)
 with col4:
     fase_options = sorted(list(set(df_temp["FASE"].fillna("Não informado").tolist()) | set(["Produção"])))
-    fase = st.multiselect("Fase", options=fase_options, default=["VC"] if "VC" in fase_options else None, key="f2")
+    pre_selecionadas = [fase for fase in ["VC", "VC R1", "VC R2", "VC ADD"] if fase in fase_options]
+    fase = st.multiselect("Fase", options=fase_options, default=pre_selecionadas, key="f2")
 with col5:
     gp = st.multiselect("GP", options=sorted(df_temp["GP"].fillna("Não informado").unique().tolist()), key="g2")
 with col6:
