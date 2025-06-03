@@ -87,8 +87,9 @@ if not df_filtrado.empty:
 
     st.markdown("### Tabela Detalhada")
     tabela = df_filtrado[[
-        "CLIENTE", "PROJETO", "FASE", "DIAS EM VC", "DATA ENTREGA PRIMEIRA VALIDACAO"
+        "CLIENTE", "PROJETO", "FASE", "DIAS EM VC", "OBSERVACOES", "DATA ENTREGA PRIMEIRA VALIDACAO"
     ]].rename(columns={
+        "OBSERVACOES": "OBSERVAÇÕES",
         "FASE": "STATUS",
         "DATA ENTREGA PRIMEIRA VALIDACAO": "DATA PRIMEIRA ENTREGA"
     }).reset_index(drop=True)
