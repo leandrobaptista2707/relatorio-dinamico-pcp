@@ -13,8 +13,8 @@ URL_CSV = "https://docs.google.com/spreadsheets/d/14i9CpKM87PRXvLAVo_0VUcjNxfxnC
 @st.cache_data(ttl=3600)
 def carregar_dados():
     """
-    Carrega os dados, converte as colunas de data, calcula os dias
-    e pré-ordena o DataFrame.
+    Carrega os dados, converte as colunas de data e calcula os dias.
+    A ordenação será aplicada depois dos filtros.
     """
     df = pd.read_csv(URL_CSV)
     # Limpa espaços em branco que possam existir nos nomes das colunas
@@ -28,13 +28,6 @@ def carregar_dados():
     df["DIAS EM VC"] = (hoje - df["DATA ENTREGA PRIMEIRA VALIDACAO"]).dt.days.astype("Int64")
     df["DIAS ALTERACAO STATUS"] = (hoje - df["DATA ALTERACAO STATUS"]).dt.days.astype("Int64")
 
-    # Pré-ordena os dados: do mais antigo (maior número de dias) para o mais novo.
-    df = df.sort_values(
-        by=["DIAS EM VC", "DIAS ALTERACAO STATUS"],
-        ascending=[False, False],
-        na_position='last'
-    )
-
     return df
 
 df = carregar_dados()
@@ -47,13 +40,13 @@ with col1:
     gps = st.multiselect("GP", sorted(df["GP"].dropna().unique()), default=None)
 with col2:
     produtos = st.multiselect("Produto", sorted(df["PRODUTO"].dropna().unique()), default=None)
-    
+
     # Lógica para o filtro de Status
     opcoes_status = sorted(df["STATUS"].dropna().unique())
     status_padrao_desejado = ["VC", "VC R1", "VC R2", "VC ADD"]
     # Filtra os valores padrão para garantir que eles existam nas opções disponíveis
     status_padrao_valido = [s for s in status_padrao_desejado if s in opcoes_status]
-    
+
     status = st.multiselect("Status", opcoes_status, default=status_padrao_valido)
 
 # Tratamento para evitar erro se a coluna de data estiver vazia ou sem datas válidas
@@ -131,20 +124,24 @@ st.markdown("---")
 
 
 # --- Geração de colunas visuais e exibição da tabela ---
-# Aplica as funções para gerar os indicadores visuais no DataFrame já filtrado
+# Aplica a ordenação correta ao DataFrame filtrado, por data cronológica
+df_filtrado = df_filtrado.sort_values(
+    by=["DATA ENTREGA PRIMEIRA VALIDACAO", "DATA ALTERACAO STATUS"],
+    ascending=[True, True],
+    na_position='last'
+).reset_index(drop=True)
+
+# Aplica as funções para gerar os indicadores visuais
 df_filtrado["STATUS VISUAL"] = df_filtrado["DIAS ALTERACAO STATUS"].apply(gerar_bolinha_status)
 df_filtrado["VC VISUAL"] = df_filtrado["DIAS EM VC"].apply(gerar_bolinha_vc)
 
-# Cria as colunas de data formatadas como string APENAS para exibição
-df_filtrado['DATA PRIMEIRA ENTREGA'] = df_filtrado['DATA ENTREGA PRIMEIRA VALIDACAO'].dt.strftime('%d/%m/%Y')
-df_filtrado['DATA ALTERACAO STATUS_STR'] = df_filtrado['DATA ALTERACAO STATUS'].dt.strftime('%d/%m/%Y')
-
-# A ordenação inicial já foi feita na função carregar_dados()
-# Apenas selecionamos e renomeamos as colunas para exibição
+# Seleciona as colunas para exibição, mantendo as colunas de data originais (datetime)
 tabela_para_exibir = df_filtrado[[
     'CLIENTE', 'PROJETO', 'STATUS',
-    'DATA PRIMEIRA ENTREGA', 'DIAS EM VC', 'VC VISUAL',
-    'DATA ALTERACAO STATUS_STR', 'DIAS ALTERACAO STATUS', 'STATUS VISUAL',
+    'DATA ENTREGA PRIMEIRA VALIDACAO',
+    'DIAS EM VC', 'VC VISUAL',
+    'DATA ALTERACAO STATUS',
+    'DIAS ALTERACAO STATUS', 'STATUS VISUAL',
     'OBSERVACOES'
 ]]
 
@@ -152,8 +149,8 @@ tabela_para_exibir = df_filtrado[[
 tabela_para_exibir = tabela_para_exibir.rename(columns={
     'VC VISUAL': 'ENT',
     'STATUS VISUAL': 'ALT',
-    'DATA PRIMEIRA ENTREGA': 'PRIM.\nENTREGA',
-    'DATA ALTERACAO STATUS_STR': 'ALT.\nSTATUS',
+    'DATA ENTREGA PRIMEIRA VALIDACAO': 'PRIM.\nENTREGA',
+    'DATA ALTERACAO STATUS': 'ALT.\nSTATUS',
     'DIAS ALTERACAO STATUS': 'DIAS\nALT.'
 })
 
@@ -164,5 +161,15 @@ st.dataframe(
     tabela_para_exibir,
     use_container_width=True,
     hide_index=True,
-    height=735 # (20 linhas * 35px por linha) + 35px para o cabeçalho
+    height=735, # (20 linhas * 35px por linha) + 35px para o cabeçalho
+    column_config={
+        "PRIM.\nENTREGA": st.column_config.DatetimeColumn(
+            "Prim. Entrega",
+            format="DD/MM/YYYY",
+        ),
+        "ALT.\nSTATUS": st.column_config.DatetimeColumn(
+            "Alt. Status",
+            format="DD/MM/YYYY",
+        )
+    }
 )
