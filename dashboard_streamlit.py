@@ -6,7 +6,7 @@ from datetime import datetime
 hoje = pd.to_datetime(datetime.now().date())
 
 st.set_page_config(page_title="RELATÓRIO DINÂMICO PCP", layout="wide")
-st.title("RELATÓRIO DINÂMICO PCP")
+st.title("RELATÓRIO DINÂMICO PCP v32")
 
 URL_CSV = "https://docs.google.com/spreadsheets/d/14i9CpKM87PRXvLAVo_0VUcjNxfxnCLwhhmg0mh5ywkI/gviz/tq?tqx=out:csv&gid=1319025913"
 
